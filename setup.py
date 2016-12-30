@@ -14,5 +14,6 @@ setup(
     scripts=[
         'glowd',
     ],
-    data_files=[('/etc/systemd/system',['glowd.service'])],
+    data_files=[('/etc/systemd/system',['init/glowd.service']),
+                ('/etc/init.d',['init/glowd'])],
  )
