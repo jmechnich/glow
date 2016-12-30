@@ -1,0 +1,12 @@
+[Unit]
+Description=HTTP connection monitor for mpd
+After=network.target
+Requires=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/glowd
+User=daemon
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
