@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import math, time, argparse, sys, os
+import math, time, argparse, sys, os, signal
 
 from glow.Common     import arg_range, arg_positive
 from glow.LEDClient  import LEDClient
@@ -27,6 +27,10 @@ def read_configfile(filename,verbose=False):
     return cmdargs
 
 if __name__ == "__main__":
+    def term_handler(signum,frame):
+        sys.exit(0)
+    signal.signal(signal.SIGTERM,term_handler)
+    
     progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
     effects = Effect.list_all()
     parser = argparse.ArgumentParser(add_help=False)
@@ -111,6 +115,11 @@ if __name__ == "__main__":
         print
             
     l = LEDClient(args)
+
+    if args.offatexit:
+        import atexit
+        atexit.register(l.off)
+    
     if args.mirror:
         args.nled /= 2
     e = effect_module.instance(args)
@@ -131,6 +140,3 @@ if __name__ == "__main__":
             
     except KeyboardInterrupt:
         pass
-
-    if args.offatexit:
-        l.off()
