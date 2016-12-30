@@ -34,7 +34,7 @@
 # Higher chance = more roaring fire.  Lower chance = more flickery fire.
 # Default 120, suggested range 50-200.
 
-from esp8266leds.Conversion     import convert, toUnit
+from glow.Conversion     import convert, toUnit
 
 class Fire2012(object):
     def __init__(self,args):
@@ -88,7 +88,7 @@ def HeatColor(temperature):
 
 def create_parser():
     from argparse import ArgumentParser, SUPPRESS
-    from esp8266leds.Common import arg_range, arg_positive
+    from glow.Common import arg_range, arg_positive
     parser = ArgumentParser(add_help=False, usage=SUPPRESS,
                             description="Effect options:")
     parser.add_argument("--cooling", default=55,

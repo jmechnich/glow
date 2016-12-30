@@ -2,10 +2,10 @@
 
 import math, time, argparse, sys, os
 
-from esp8266leds.Common     import arg_range, arg_positive
-from esp8266leds.LEDClient  import LEDClient
-from esp8266leds            import Effect
-from esp8266leds.Conversion import convert, gamma, toByte, clamp, toHSV, toRGB, multiply
+from glow.Common     import arg_range, arg_positive
+from glow.LEDClient  import LEDClient
+from glow            import Effect
+from glow.Conversion import convert, gamma, toByte, clamp, toHSV, toRGB, multiply
 
 def read_configfile(filename,verbose=False):
     cmdargs = []

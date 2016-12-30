@@ -1,8 +1,8 @@
 import math
 from itertools import chain
 
-from esp8266leds.RainbowCommon import iterate_lin
-import esp8266leds.Conversion as cu
+from glow.RainbowCommon import iterate_lin
+import glow.Conversion as cu
 
 
 class Rainbow(object):
@@ -29,7 +29,7 @@ class Rainbow(object):
         return msg
 
 def create_parser():
-    from esp8266leds.RainbowCommon import create_parser as cp
+    from glow.RainbowCommon import create_parser as cp
     return cp()
 
 def instance(args):

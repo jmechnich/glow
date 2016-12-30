@@ -1,5 +1,5 @@
 import math,subprocess
-from esp8266leds.Conversion     import convert, rgb2bgr
+from glow.Conversion     import convert, rgb2bgr
 class LEDClient(object):
     def __init__(self,args):
         self.nled      = int(args.nled)

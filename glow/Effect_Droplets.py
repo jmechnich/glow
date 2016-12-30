@@ -77,7 +77,7 @@ class Droplets(object):
 
 def create_parser():
     from argparse import ArgumentParser, SUPPRESS
-    from esp8266leds.Common import arg_range, arg_positive
+    from glow.Common import arg_range, arg_positive
     parser = ArgumentParser(add_help=False, usage=SUPPRESS,
                             description="Effect options:")
     parser.add_argument("--huespread", default=0.12, type=arg_positive(float),
