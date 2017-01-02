@@ -23,7 +23,7 @@ def read_configfile(filename,verbose=False):
             if len(line) == 0 or line.startswith('#'): continue
             arg = [ a.strip() for a in line.split('=') ]
             cmdargs.append('--' + arg[0])
-            cmdargs.append(arg[1])
+            if len(arg) > 1: cmdargs += [ i.strip() for i in arg[1].split() ]
     return cmdargs
 
 if __name__ == "__main__":
@@ -57,8 +57,8 @@ if __name__ == "__main__":
                         help="set number of leds (default: %(default)s)")
     parser.add_argument("-o", "--off", default=None, const=True, nargs='?',
                         type=bool, help="set leds off and exit")
-    parser.add_argument("--offatexit", default=None, const=True, nargs='?',
-                        type=bool, help="set leds off at exit")
+    parser.add_argument("--offatexit", action="store_true",
+                        help="set leds off at exit")
     parser.add_argument("--pin", default=1, type=int,
                         help="set led pin number (default: %(default)s)")
     parser.add_argument("-r", "--rtype", default="mqtt", type=str,
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--time", default=1., type=arg_positive(float),
                         help="time between changes in seconds" \
                         " (default: %(default)s)")
-    parser.add_argument("-v", "--verbose", default=None, const=True, nargs='?',
-                        type=bool, help="verbose output")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="verbose output")
     parser.add_argument("--help", action="store_true")
 
     
