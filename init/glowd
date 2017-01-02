@@ -1,6 +1,6 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:
+# Provides:          glowd
 # Required-Start:    $all
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
