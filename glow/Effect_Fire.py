@@ -45,25 +45,25 @@ class Fire2012(object):
 
     def iterate(self):
         import random
-        for i in xrange(self.nled):
+        for i in range(self.nled):
             self.heat[i] = max(0, self.heat[i]-random.randint(
                 0,((self.cooling * 10) / self.nled) + 2))
 
-        for k in xrange(self.nled-3,1,-1):
+        for k in range(self.nled-3,1,-1):
             self.heat[k] = (self.heat[k-1] + self.heat[k-2] + self.heat[k-2]) / 3
 
         if random.randint(0,255) < self.sparking:
-            y = random.randint(0,6)
+            y = random.randint(0,min(6,self.nled-1))
             self.heat[y] = min(255,self.heat[y]+random.randint(160,254))
 
         leds = []
-        for j in xrange(self.nled):
+        for j in range(self.nled):
             leds += [ (255*i)>>8 for i in HeatColor(self.heat[j]) ]
         convert( leds, [toUnit] )
         return leds
 
 def HeatColor(temperature):
-    t192 = (temperature*192)>>8
+    t192 = int(temperature*192)>>8
     
     heatramp = t192 & 0x3F  # 0..63
     heatramp <<= 2          # scale up to 0..252

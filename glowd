@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+from __future__ import print_function
 
 import math, time, argparse, sys, os, signal
 
@@ -11,11 +13,11 @@ def read_configfile(filename,verbose=False):
     cmdargs = []
     if not os.path.exists(filename):
         if verbose:
-            print "Could not open configfile '%s', skipping" % filename
+            print("Could not open configfile '%s', skipping" % filename)
         return cmdargs
     
     if verbose:
-        print "Reading configuration from file '%s'" % filename
+        print("Reading configuration from file '%s'" % filename)
 
     with open(filename) as f:
         for line in f.readlines():
@@ -76,7 +78,14 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose output")
     parser.add_argument("--help", action="store_true")
-
+    parser.add_argument("--tcpport", type=int, default=80,
+                        help="TCP port used for checking if host is online (default: %(default)s)")
+    parser.add_argument("--timeout", type=int, default=5,
+                        help="timeout for TCP connections (default: %(default)s)")
+    parser.add_argument("--oncheck", action="store_true",
+                        help="check if host is online")
+    parser.add_argument("--checkint", type=int, default=30,
+                        help="time interval for checking host online status in seconds (default: %(default)s)")
     
     args, unparsed_args = parser.parse_known_args()
     if args.config:
@@ -85,9 +94,9 @@ if __name__ == "__main__":
         cmdargs = read_configfile('/etc/%s.conf' % progname, verbose=args.verbose)
         cmdargs += read_configfile(os.path.join(os.path.expanduser("~"),'.%s.conf' % progname),verbose=args.verbose)
 
-    #print cmdargs, sys.argv[1:]
+    #print(cmdargs, sys.argv[1:])
     args, unparsed_args = parser.parse_known_args(cmdargs + sys.argv[1:])
-    #print args, unparsed_args
+    #print(args, unparsed_args)
     
     if args.effect:
         argparse.ArgumentParser(add_help=False)
@@ -96,25 +105,30 @@ if __name__ == "__main__":
         effect_args, unparsed_effect_args = effect_parser.parse_known_args(
             unparsed_args)
         if args.verbose and len(unparsed_effect_args):
-            print "Ignoring arguments", unparsed_effect_args
+            print("Ignoring arguments", unparsed_effect_args)
         args.__dict__.update(vars(effect_args))
     elif args.verbose and len(unparsed_args):
-        print "Ignoring arguments", unparsed_args
+        print("Ignoring arguments", unparsed_args)
         
     if args.help:
         parser.print_help()
         if args.effect:
-            print
+            print()
             effect_parser.print_help()
         sys.exit(0)
 
     if args.verbose:
-        print "Settings:"
-        for i in sorted(vars(args).iteritems()):
-            print "  %10s: %s" % i
-        print
+        print("Settings:")
+        for i in sorted(vars(args).items()):
+            print("  %10s: %s" % i)
+        print()
             
     l = LEDClient(args)
+    if args.off:
+        if args.verbose:
+            print("Switching LEDs off")
+        l.off()
+        sys.exit(0)
 
     if args.offatexit:
         import atexit
@@ -124,14 +138,8 @@ if __name__ == "__main__":
         args.nled /= 2
     e = effect_module.instance(args)
     try:
-        if args.off:
-            if args.verbose:
-                print "Switching LEDs off"
-            l.off()
-            sys.exit(0)
-            
         if args.verbose:
-            print "Starting effect '%s'" % args.effect
+            print("Starting effect '%s'" % args.effect)
         while True:
             data = e.iterate()
             convert(data,[toHSV, multiply((1,1,args.max)), toRGB, gamma(args.gamma),toByte,clamp(0,255)])

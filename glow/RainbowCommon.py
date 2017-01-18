@@ -1,15 +1,15 @@
 import math
 
 def iterate_lin(hue,stepsize,n):
-    return [ hue+i*stepsize for i in xrange(n) ]
+    return [ hue+i*stepsize for i in range(n) ]
 
 def iterate_sin(hue,stepsize,n):
     return [ (math.sin(hue+i*stepsize)*0.5)+1
-             for i in xrange(n) ]
+             for i in range(n) ]
 
 def iterate_sin2(hue,stepsize,n):
     return [ math.pow(math.sin(hue+i*stepsize), 2)
-             for i in xrange(n) ]
+             for i in range(n) ]
 
 def create_parser():
     from argparse import ArgumentParser, SUPPRESS

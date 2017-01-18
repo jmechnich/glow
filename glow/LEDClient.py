@@ -1,5 +1,9 @@
-import math,subprocess
+from __future__ import print_function
+
+import math, subprocess
+
 from glow.Conversion     import convert, rgb2bgr
+
 class LEDClient(object):
     def __init__(self,args):
         self.nled      = int(args.nled)
@@ -19,8 +23,8 @@ class LEDClient(object):
     
     def send_raw_mqtt(self,data,topic="leddata",device="huzzah"):
         if self.verbose:
-            print "Sending data to %s:%d, topic %s/in/%s, length %d" % \
-                (self.host,self.port,device,topic,len(data))
+            print("Sending data to %s:%d, topic %s/in/%s, length %d" % \
+                (self.host,self.port,device,topic,len(data)))
         cmdline = "mosquitto_pub -h %s -p %d -s -t %s/in/%s" % \
                   (self.host,self.port,device,topic)
         p = subprocess.Popen(cmdline.split(),stdin=subprocess.PIPE)
@@ -36,7 +40,7 @@ class LEDClient(object):
         if self.proto == 'mqtt':
             self.send_raw_mqtt(data,topic,device)
         else:
-            self.sock.sendto(bytearray('abc') + data,(self.host,self.port))
+            self.sock.sendto(bytearray('abc','utf8') + data,(self.host,self.port))
 
     def send(self,data,topic="leddata",device="huzzah"):
         if self.mirror:
