@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-import math, subprocess
+import math, subprocess, socket
 
 from glow.Conversion     import convert, rgb2bgr
 
@@ -16,10 +16,13 @@ class LEDClient(object):
         self.mirror    = bool(args.mirror)
         
         if self.proto != 'mqtt':
-            import socket
             self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         else:
             self.sock = None
+
+    def __del__(self):
+        if self.sock:
+            self.sock.close()
     
     def send_raw_mqtt(self,data,topic="leddata",device="huzzah"):
         if self.verbose:
@@ -40,7 +43,11 @@ class LEDClient(object):
         if self.proto == 'mqtt':
             self.send_raw_mqtt(data,topic,device)
         else:
-            self.sock.sendto(bytearray('abc','utf8') + data,(self.host,self.port))
+            try:
+                self.sock.sendto(bytearray('abc','utf8') + data,
+                                 (self.host,self.port))
+            except socket.gaierror as e:
+                pass #print(e)
 
     def send(self,data,topic="leddata",device="huzzah"):
         if self.mirror:

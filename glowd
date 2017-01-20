@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-import math, time, argparse, sys, os, signal
+import math, time, argparse, sys, os, signal, asyncio, functools, socket
 
 from glow.Common     import arg_range, arg_positive
 from glow.LEDClient  import LEDClient
@@ -28,15 +28,59 @@ def read_configfile(filename,verbose=False):
             if len(arg) > 1: cmdargs += [ i.strip() for i in arg[1].split() ]
     return cmdargs
 
-if __name__ == "__main__":
-    def term_handler(signum,frame):
-        sys.exit(0)
-    signal.signal(signal.SIGTERM,term_handler)
-    
-    progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-    effects = Effect.list_all()
-    parser = argparse.ArgumentParser(add_help=False)
 
+@asyncio.coroutine
+def main_task(loop,args,leds,effect):
+    if args.verbose:
+        print("Starting main task")
+
+    uptask = None
+    while True:
+        is_online = True
+        try:
+            (yield from asyncio.wait_for(loop.create_connection(
+                asyncio.Protocol,host=args.host,port=args.tcpport),
+                                         timeout=args.timeout))[0].close()
+        except socket.gaierror as e:
+            print("Socket Error:", e)
+            break
+        except asyncio.TimeoutError:
+            is_online = False
+        except ConnectionRefusedError:
+            pass
+        if is_online and uptask is None:
+            if args.verbose:
+                print("Starting update task")
+            uptask = asyncio.ensure_future(update_task(args,leds,effect))
+        elif not is_online and uptask:
+            if args.verbose:
+                print("Stopping update task")
+            uptask.cancel()
+            uptask = None
+        yield from asyncio.sleep(args.checkint)
+    loop.stop()
+
+@asyncio.coroutine
+def update_task(args,leds,effect):
+    if args.verbose:
+        print("Starting effect '%s'" % args.effect)
+        
+    while True:
+        data = effect.iterate()
+        convert(data,
+                [ toHSV,
+                  multiply((1,1,args.max)),
+                  toRGB,
+                  gamma(args.gamma),
+                  toByte,
+                  clamp(0,255)
+                ])
+        leds.send(data)
+        yield from asyncio.sleep(args.time)
+
+def parse_config():
+    ## ArgumentParser setup
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-h", "--host", default="localhost", type=str,
                         nargs="?",
                         help="host (default: %(default)s)")
@@ -49,7 +93,8 @@ if __name__ == "__main__":
                         type=str, help="set config file path")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
-    parser.add_argument("-e", "--effect", default="Rainbow", choices=effects,
+    parser.add_argument("-e", "--effect", default="Rainbow",
+                        choices=Effect.list_all(),
                         help="effect name (default: %(default)s)")
     parser.add_argument("-g", "--grb", action="store_true",
                         help="use GRB order")
@@ -78,26 +123,29 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose output")
     parser.add_argument("--help", action="store_true")
-    parser.add_argument("--tcpport", type=int, default=80,
+    parser.add_argument("--tcpport", type=int, default=81,
                         help="TCP port used for checking if host is online (default: %(default)s)")
-    parser.add_argument("--timeout", type=int, default=5,
+    parser.add_argument("--timeout", type=int, default=2,
                         help="timeout for TCP connections (default: %(default)s)")
-    parser.add_argument("--oncheck", action="store_true",
-                        help="check if host is online")
-    parser.add_argument("--checkint", type=int, default=30,
+    parser.add_argument("--checkint", type=int, default=5,
                         help="time interval for checking host online status in seconds (default: %(default)s)")
-    
+
+    ## parse command line for config file argument
     args, unparsed_args = parser.parse_known_args()
+
+    ## parse config file(s)
     if args.config:
         cmdargs = read_configfile(args.config,verbose=args.verbose)
     else:
+        progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         cmdargs = read_configfile('/etc/%s.conf' % progname, verbose=args.verbose)
         cmdargs += read_configfile(os.path.join(os.path.expanduser("~"),'.%s.conf' % progname),verbose=args.verbose)
 
-    #print(cmdargs, sys.argv[1:])
+    ## parse command line (for real now)
     args, unparsed_args = parser.parse_known_args(cmdargs + sys.argv[1:])
-    #print(args, unparsed_args)
-    
+
+    ## set up initial effect
+    effect_module = None
     if args.effect:
         argparse.ArgumentParser(add_help=False)
         effect_module = Effect.load(args.effect)
@@ -109,7 +157,8 @@ if __name__ == "__main__":
         args.__dict__.update(vars(effect_args))
     elif args.verbose and len(unparsed_args):
         print("Ignoring arguments", unparsed_args)
-        
+
+    ## print general and effect-specific help
     if args.help:
         parser.print_help()
         if args.effect:
@@ -117,12 +166,26 @@ if __name__ == "__main__":
             effect_parser.print_help()
         sys.exit(0)
 
+    ## print all configuration parameters
     if args.verbose:
         print("Settings:")
         for i in sorted(vars(args).items()):
             print("  %10s: %s" % i)
         print()
+    
+    return (args, effect_module)
             
+if __name__ == "__main__":
+    ## parse configuration files and command line arguments
+    ## retrieve initial effect module
+    args, effect_module = parse_config()
+
+    ## for asyncio debugging
+    #if args.verbose:
+    #    import logging
+    #    logging.basicConfig(level=logging.DEBUG)
+
+    ## create LEDClient and check if we are just switching off
     l = LEDClient(args)
     if args.off:
         if args.verbose:
@@ -136,15 +199,24 @@ if __name__ == "__main__":
     
     if args.mirror:
         args.nled /= 2
+
+    ## instantiate initial effect
     e = effect_module.instance(args)
+
+    ## initialize event loop
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
+
+    for signame in ('SIGINT', 'SIGTERM'):
+        loop.add_signal_handler(getattr(signal, signame), loop.stop)
+
+    ## create main task
+    asyncio.ensure_future(main_task(loop,args,l,e))
+
+    ## start event loop
     try:
-        if args.verbose:
-            print("Starting effect '%s'" % args.effect)
-        while True:
-            data = e.iterate()
-            convert(data,[toHSV, multiply((1,1,args.max)), toRGB, gamma(args.gamma),toByte,clamp(0,255)])
-            l.send(data)
-            time.sleep(args.time)
-            
-    except KeyboardInterrupt:
-        pass
+        loop.run_forever()
+    finally:
+        for t in asyncio.Task.all_tasks(): t.cancel()
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()

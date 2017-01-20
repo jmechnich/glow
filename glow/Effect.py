@@ -9,8 +9,11 @@ def list_all():
     return [ i[7:-3] for i in plugins ]
 
 def load(name):
-    import imp, os
+    import importlib.util, os.path
     moduledir  = os.path.dirname(__file__)
     modulename = "Effect_"+name
-    fp, pathname, description = imp.find_module(modulename,[moduledir])
-    return imp.load_module("EffectInstance", fp, pathname, description)
+    spec = importlib.util.spec_from_file_location(
+        modulename, os.path.join(moduledir,modulename+".py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
