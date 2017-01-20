@@ -1,5 +1,10 @@
 from __future__ import print_function
 
+import sys
+if sys.version_info < (3,4):
+    print("Requires python 3.4 or later")
+    sys.exit(1)
+
 # detect systemd
 def have_systemd():
     from subprocess import check_output

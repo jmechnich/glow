@@ -122,6 +122,8 @@ def parse_config():
                         " (default: %(default)s)")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="verbose output")
+    parser.add_argument("--debug", action="store_true",
+                        help="debug output")
     parser.add_argument("--help", action="store_true")
     parser.add_argument("--tcpport", type=int, default=81,
                         help="TCP port used for checking if host is online (default: %(default)s)")
@@ -181,9 +183,9 @@ if __name__ == "__main__":
     args, effect_module = parse_config()
 
     ## for asyncio debugging
-    #if args.verbose:
-    #    import logging
-    #    logging.basicConfig(level=logging.DEBUG)
+    if args.debug:
+        import logging
+        logging.basicConfig(level=logging.DEBUG)
 
     ## create LEDClient and check if we are just switching off
     l = LEDClient(args)
@@ -205,7 +207,10 @@ if __name__ == "__main__":
 
     ## initialize event loop
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    loop.set_debug(args.debug)
+    ## increase to 200ms to prevent output on slow systems
+    if not args.debug:
+        loop.slow_callback_duration = 0.2
 
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(getattr(signal, signame), loop.stop)
