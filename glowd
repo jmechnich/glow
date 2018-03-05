@@ -9,6 +9,14 @@ from glow.LEDClient  import LEDClient
 from glow            import Effect
 from glow.Conversion import convert, gamma, toByte, clamp, toHSV, toRGB, multiply
 
+def ensure_future(arg):
+    # python version >= 3.4.4
+    try:
+        return asyncio.ensure_future(arg)
+    # python version < 3.4.4
+    except:
+        return asyncio.async(arg)
+    
 def read_configfile(filename,verbose=False):
     cmdargs = []
     if not os.path.exists(filename):
@@ -51,7 +59,7 @@ def main_task(loop,args,leds,effect):
         if is_online and uptask is None:
             if args.verbose:
                 print("Starting update task")
-            uptask = asyncio.ensure_future(update_task(args,leds,effect))
+            uptask = ensure_future(update_task(args,leds,effect))
         elif not is_online and uptask:
             if args.verbose:
                 print("Stopping update task")
@@ -216,7 +224,7 @@ if __name__ == "__main__":
         loop.add_signal_handler(getattr(signal, signame), loop.stop)
 
     ## create main task
-    asyncio.ensure_future(main_task(loop,args,l,e))
+    ensure_future(main_task(loop,args,l,e))
 
     ## start event loop
     try:

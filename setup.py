@@ -28,7 +28,7 @@ if os.uname()[0] == 'Linux':
         print("Detected sysvinit")
         etc_files.append(('/etc/init.d',['init/glowd']))
     if not os.path.exists('/etc/glowd.conf'):
-        etc_files.append('/etc',['glowd.conf'])
+        etc_files.append(('/etc',['glowd.conf']))
 
 from setuptools import setup
 setup(
