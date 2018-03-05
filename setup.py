@@ -7,14 +7,16 @@ if sys.version_info < (3,4):
 
 # detect systemd
 def have_systemd():
-    from subprocess import check_output
+    #from subprocess import check_output
 
-    def get_pid(name):
-        try:
-            return [int(i) for i in check_output(["pidof",name]).split()]
-        except:
-            return []
-    return True if 1 in get_pid("systemd") else False
+    #def get_pid(name):
+    #    try:
+    #        return [int(i) for i in check_output(["pidof",name]).split()]
+    #    except:
+    #        return []
+    #return True if 1 in get_pid("systemd") else False
+    import os
+    return True if os.path.exists("/run/systemd/system") else False
 
 etc_files = []
 import os
