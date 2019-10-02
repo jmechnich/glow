@@ -1,7 +1,7 @@
 [Unit]
-Description=HTTP connection monitor for mpd
-After=network.target
-Requires=network-online.target
+Description=Ambient lightning LED strip control daemon glowd
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 ExecStart=/usr/local/bin/glowd
