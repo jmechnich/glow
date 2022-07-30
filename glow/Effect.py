@@ -12,7 +12,7 @@ def load(name):
     import os.path, sys
     moduledir  = os.path.dirname(__file__)
     modulename = "Effect_"+name
-    if sys.version_info < (3,6):
+    if sys.version_info < (3,5,3):
         import imp
         fp, pathname, description = imp.find_module(modulename,[moduledir])
         module = imp.load_module("EffectInstance", fp, pathname, description)
