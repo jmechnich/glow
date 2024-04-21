@@ -2,67 +2,76 @@ from __future__ import print_function
 
 import math, subprocess, socket
 
-from glow.Conversion     import convert, rgb2bgr
+from glow.Conversion import convert, rgb2bgr
+
 
 class LEDClient(object):
-    def __init__(self,args):
-        self.nled      = int(args.nled)
-        self.host      = str(args.host)
-        self.port      = int(args.port)
-        self.pin       = int(args.pin)
-        self.verbose   = bool(args.verbose)
-        self.proto     = str(args.rtype)
-        self.grb       = bool(args.grb)
-        self.mirror    = bool(args.mirror)
-        
-        if self.proto != 'mqtt':
-            self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    def __init__(self, args):
+        self.nled = int(args.nled)
+        self.host = str(args.host)
+        self.port = int(args.port)
+        self.pin = int(args.pin)
+        self.verbose = bool(args.verbose)
+        self.proto = str(args.rtype)
+        self.grb = bool(args.grb)
+        self.mirror = bool(args.mirror)
+
+        if self.proto != "mqtt":
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         else:
             self.sock = None
 
     def __del__(self):
         if self.sock:
             self.sock.close()
-    
-    def send_raw_mqtt(self,data,topic="leddata",device="huzzah"):
+
+    def send_raw_mqtt(self, data, topic="leddata", device="huzzah"):
         if self.verbose:
-            print("Sending data to %s:%d, topic %s/in/%s, length %d" % \
-                (self.host,self.port,device,topic,len(data)))
-        cmdline = "mosquitto_pub -h %s -p %d -s -t %s/in/%s" % \
-                  (self.host,self.port,device,topic)
-        p = subprocess.Popen(cmdline.split(),stdin=subprocess.PIPE)
+            print(
+                "Sending data to %s:%d, topic %s/in/%s, length %d"
+                % (self.host, self.port, device, topic, len(data))
+            )
+        cmdline = "mosquitto_pub -h %s -p %d -s -t %s/in/%s" % (
+            self.host,
+            self.port,
+            device,
+            topic,
+        )
+        p = subprocess.Popen(cmdline.split(), stdin=subprocess.PIPE)
         p.communicate(data)
         p.wait()
-    
-    def send_raw(self,data,topic="leddata",device="huzzah"):
+
+    def send_raw(self, data, topic="leddata", device="huzzah"):
         if topic == "leddata" and self.grb:
-            pos=0
+            pos = 0
             while pos < len(data):
-                data[pos],data[pos+1] = data[pos+1],data[pos]
-                pos+=3
-        if self.proto == 'mqtt':
-            self.send_raw_mqtt(data,topic,device)
+                data[pos], data[pos + 1] = data[pos + 1], data[pos]
+                pos += 3
+        if self.proto == "mqtt":
+            self.send_raw_mqtt(data, topic, device)
         else:
             try:
-                self.sock.sendto(bytearray('abc','utf8') + data,
-                                 (self.host,self.port))
+                self.sock.sendto(
+                    bytearray("abc", "utf8") + data, (self.host, self.port)
+                )
             except socket.gaierror as e:
-                pass #print(e)
+                pass  # print(e)
 
-    def send(self,data,topic="leddata",device="huzzah"):
+    def send(self, data, topic="leddata", device="huzzah"):
         if self.mirror:
-            mirrored = [ i for i in reversed(data) ]
-            convert(mirrored,[rgb2bgr])
+            mirrored = [i for i in reversed(data)]
+            convert(mirrored, [rgb2bgr])
             data += mirrored
-        self.send_raw(bytearray(data),topic,device)
+        self.send_raw(bytearray(data), topic, device)
 
-            
-    def send_cmd(self,cmd):
-        return self.send_raw(cmd,topic="cmd")
-    
+    def send_cmd(self, cmd):
+        return self.send_raw(cmd, topic="cmd")
+
     def off(self):
-        if self.proto == 'mqtt':
-            self.send_cmd("ws2812.writergb(%d,string.char(0):rep(%d))" % \
-                          (self.pin,self.nled*3))
+        if self.proto == "mqtt":
+            self.send_cmd(
+                "ws2812.writergb(%d,string.char(0):rep(%d))"
+                % (self.pin, self.nled * 3)
+            )
         else:
-            self.send_raw(bytearray(self.nled*3))
+            self.send_raw(bytearray(self.nled * 3))
