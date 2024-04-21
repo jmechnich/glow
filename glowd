@@ -29,8 +29,7 @@ def read_configfile(filename,verbose=False):
     return cmdargs
 
 
-@asyncio.coroutine
-def main_task(loop,args,leds,effect):
+async def main_task(loop,args,leds,effect):
     if args.verbose:
         print("Starting main task")
 
@@ -38,7 +37,7 @@ def main_task(loop,args,leds,effect):
     while True:
         is_online = True
         try:
-            (yield from asyncio.wait_for(loop.create_connection(
+            (await asyncio.wait_for(loop.create_connection(
                 asyncio.Protocol,host=args.host,port=args.tcpport),
                                          timeout=args.timeout))[0].close()
         except socket.gaierror as e:
@@ -57,11 +56,10 @@ def main_task(loop,args,leds,effect):
                 print("Stopping update task")
             uptask.cancel()
             uptask = None
-        yield from asyncio.sleep(args.checkint)
+        await asyncio.sleep(args.checkint)
     loop.stop()
 
-@asyncio.coroutine
-def update_task(args,leds,effect):
+async def update_task(args,leds,effect):
     if args.verbose:
         print("Starting effect '%s'" % args.effect)
         
@@ -76,7 +74,7 @@ def update_task(args,leds,effect):
                   clamp(0,255)
                 ])
         leds.send(data)
-        yield from asyncio.sleep(args.time)
+        await asyncio.sleep(args.time)
 
 def parse_config():
     ## ArgumentParser setup
@@ -212,8 +210,12 @@ if __name__ == "__main__":
     if not args.debug:
         loop.slow_callback_duration = 0.2
 
+    def stop_loop():
+        for t in asyncio.all_tasks():
+            t.cancel()
+        loop.stop()
     for signame in ('SIGINT', 'SIGTERM'):
-        loop.add_signal_handler(getattr(signal, signame), loop.stop)
+        loop.add_signal_handler(getattr(signal, signame), stop_loop)
 
     ## create main task
     asyncio.ensure_future(main_task(loop,args,l,e))
@@ -222,6 +224,5 @@ if __name__ == "__main__":
     try:
         loop.run_forever()
     finally:
-        for t in asyncio.Task.all_tasks(): t.cancel()
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
