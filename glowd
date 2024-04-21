@@ -134,12 +134,18 @@ def parse_config():
     args, unparsed_args = parser.parse_known_args()
 
     ## parse config file(s)
+    progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+    conffiles = [
+        f'/etc/{progname}.conf',
+        os.path.join(os.path.expanduser("~"), f'.{progname}.conf'),
+        os.path.join(os.path.expanduser("~"), '.config', f'{progname}.conf'),
+    ]
     if args.config:
-        cmdargs = read_configfile(args.config,verbose=args.verbose)
+        cmdargs = read_configfile(args.config, verbose=args.verbose)
     else:
-        progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-        cmdargs = read_configfile('/etc/%s.conf' % progname, verbose=args.verbose)
-        cmdargs += read_configfile(os.path.join(os.path.expanduser("~"),'.%s.conf' % progname),verbose=args.verbose)
+        cmdargs = []
+        for cf in conffiles:
+            cmdargs += read_configfile(cf, verbose=args.verbose)
 
     ## parse command line (for real now)
     args, unparsed_args = parser.parse_known_args(cmdargs + sys.argv[1:])
