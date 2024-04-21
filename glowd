@@ -13,11 +13,11 @@ def read_configfile(filename,verbose=False):
     cmdargs = []
     if not os.path.exists(filename):
         if verbose:
-            print("Could not open configfile '%s', skipping" % filename)
+            print(f"Could not open configfile '{filename}', skipping")
         return cmdargs
     
     if verbose:
-        print("Reading configuration from file '%s'" % filename)
+        print(f"Reading configuration from file '{filename}'")
 
     with open(filename) as f:
         for line in f.readlines():
@@ -41,7 +41,7 @@ async def main_task(loop,args,leds,effect):
                 asyncio.Protocol,host=args.host,port=args.tcpport),
                                          timeout=args.timeout))[0].close()
         except socket.gaierror as e:
-            print("Socket Error:", e)
+            print(f"Socket Error: {e}")
             break
         except asyncio.TimeoutError:
             is_online = False
@@ -61,7 +61,7 @@ async def main_task(loop,args,leds,effect):
 
 async def update_task(args,leds,effect):
     if args.verbose:
-        print("Starting effect '%s'" % args.effect)
+        print(f"Starting effect '{args.effect}'")
         
     while True:
         data = effect.iterate()
