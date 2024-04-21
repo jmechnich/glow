@@ -1,49 +1,28 @@
-from __future__ import print_function
-
-import sys
-if sys.version_info < (3,4):
-    print("Requires python 3.4 or later")
-    sys.exit(1)
-
-# detect systemd
-def have_systemd():
-    #from subprocess import check_output
-
-    #def get_pid(name):
-    #    try:
-    #        return [int(i) for i in check_output(["pidof",name]).split()]
-    #    except:
-    #        return []
-    #return True if 1 in get_pid("systemd") else False
-    import os
-    return True if os.path.exists("/run/systemd/system") else False
-
-etc_files = []
-import os
-if os.uname()[0] == 'Linux':
-    if have_systemd():
-        print("Detected systemd")
-        etc_files.append(('/etc/systemd/system',['init/glowd.service']))
-    else:
-        print("Detected sysvinit")
-        etc_files.append(('/etc/init.d',['init/glowd']))
-    if not os.path.exists('/etc/glowd.conf'):
-        etc_files.append(('/etc',['glowd.conf']))
+#!/usr/bin/env python3
 
 from setuptools import setup
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
-    name='glow',
-    version='0.1.0',
-    description='Control your LED strip via the network.',
-    url='https://github.com/jmechnich/glow',
-    author='Joerg Mechnich',
-    author_email='joerg.mechnich@gmail.com',
-    license='MIT',
-    packages=[
-        'glow',
+    name="glow",
+    author="Joerg Mechnich",
+    author_email="joerg.mechnich@gmail.com",
+    license="MIT",
+    description="Control your LED strip via the network.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/jmechnich/glow",
+    use_scm_version={"local_scheme": "no-local-version"},
+    setup_requires=["setuptools_scm"],
+    packages=["glow"],
+    scripts=["glowd"],
+    data_files=[
+        (
+            "share/glow",
+            ["misc/glowd.service", "misc/glowd.init", "misc/glowd.conf"],
+        )
     ],
-    scripts=[
-        'glowd',
-    ],
-    data_files=etc_files,
- )
+    python_requires=">=3.6",
+)
